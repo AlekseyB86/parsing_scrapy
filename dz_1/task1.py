@@ -1,12 +1,17 @@
+"""
+1. Посмотреть документацию к API GitHub, разобраться как вывести список репозиториев для конкретного пользователя,
+сохранить JSON-вывод в файле *.json.
+"""
+
 import json, requests
 from pprint import pprint
 
 # username = 'AlekseyB86'
 username = input("Введите login пользователя: ")
 
-url = f'https://api.github.com/users/{username}/repos'
+api_url = f'https://api.github.com/users/{username}/repos'
 
-response = requests.get(url)
+response = requests.get(api_url)
 j_data = response.json()
 if j_data:
     with open(f'repos_github_{username}.json', 'w', encoding='utf-8') as f:

@@ -20,33 +20,39 @@ import re
 
 site = 'hh.ru'
 url = f'https://{site}/search/vacancy/'
-
-text = 'python'
+text = input('Какую вакансию будем искать?: ')
 headers = {
     'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36'}
 num_page = 0
-params = {
-    'items_on_page': '20',
-    'text': text,
-    'page': num_page
-}
 vacancies = []
 
+# проходимся по пагинации страницы сайта
 while True:
-    params['page'] = num_page
+    text = 'python' if not text else text
+    params = {
+        'items_on_page': '20',
+        'text': text,
+        'page': num_page
+    }
     response = requests.get(url, params=params, headers=headers)
     dom = bS(response.text, 'html.parser')
 
+    # собираем все вакансии на странице
     vacancies_on_page = dom.find_all('div', {'class': 'vacancy-serp-item'})
+    if not vacancies_on_page:
+        text = input(f'По запросу {text} ничего не найдено, попробуйте поискать другую вакансию: ')
+        continue
 
+    # проходимся по каждой вакансии, вытаскиваем нужные данные и записываем их в словарь
     for vacancy in vacancies_on_page:
         vacancy_title = vacancy.find('a', {'data-qa': 'vacancy-serp__vacancy-title'})
         vacancy_data = {
-            'vacancy_title': vacancy_title.getText().replace(u'\xa0', u' '),
-            'vacancy_link': vacancy_title.get('href'),
+            'vacancy_title': vacancy_title.getText().replace(u'\xa0', u' '),  # название вакансии
+            'vacancy_link': vacancy_title.get('href'),  # ссылка на вакансию
             'site': site
         }
 
+        # проверка наличия зарплаты
         # noinspection PyBroadException
         try:
             vacancy_compensation = vacancy.find('span', {'data-qa': 'vacancy-serp__vacancy-compensation'}).getText()
@@ -58,10 +64,11 @@ while True:
         vacancy_data['compensation_max'] = None
         vacancy_data['currency'] = None
         if vacancy_compensation:
-            # compensation = re.sub('-', '', compensation) # not working
-            # compensation = re.sub('&ndash;', '', compensation) # not working
-            _compensation = re.split(r'\s+', vacancy_compensation)
-            vacancy_data['currency'] = _compensation[-1]
+            # compensation = re.sub('-', '', compensation) # не удаляет -
+            # compensation = re.sub('&ndash;', '', compensation) # не удаляет -
+            _compensation = re.split(r'\s+',
+                                     vacancy_compensation)  # ['от', 'мин', ''] или ['до', 'мах', ''] или ['мин', '-', 'мах', '']
+            vacancy_data['currency'] = _compensation[-1]  # валюта
 
             if _compensation[0] == 'от':
                 vacancy_data['compensation_min'] = _compensation[1]
@@ -71,6 +78,7 @@ while True:
                 vacancy_data['compensation_min'] = _compensation[0]
                 vacancy_data['compensation_max'] = _compensation[2]
 
+        # данные по работодателю
         vacancy_employer = vacancy.find('div', {'class': 'vacancy-serp-item__meta-info-company'})
         vacancy_data['employer'] = vacancy_employer.getText().replace(u'\xa0', u'')
         # noinspection PyBroadException
@@ -80,16 +88,20 @@ while True:
         except Exception:
             vacancy_data['employer_vacancies_list'] = None
 
+        # добавляем данные вакансии в список
         vacancies.append(vacancy_data)
 
-    # print(num_page, len(vacancies))
+    print(num_page,len(vacancies_on_page), len(vacancies))
 
+    # если страница последняя
     if not dom.find('a', {'data-qa': 'pager-next'}):
         break
     num_page += 1
 
+# запись данных по вакансиям в *.csv
 data_frame = pandas.DataFrame(vacancies)
 data_frame.to_csv('vacancies.csv', encoding="utf-8-sig")
 
+# запись данных по вакансиям в *.json
 with open('vacancies.json', 'w', encoding='utf-8') as f:
     json.dump(vacancies, f, indent=4)

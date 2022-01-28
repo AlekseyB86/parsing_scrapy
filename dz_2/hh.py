@@ -71,12 +71,12 @@ while True:
             vacancy_data['currency'] = _compensation[-1]  # валюта
 
             if _compensation[0] == 'от':
-                vacancy_data['compensation_min'] = _compensation[1]
+                vacancy_data['compensation_min'] = int(_compensation[1])
             elif _compensation[0] == 'до':
-                vacancy_data['compensation_max'] = _compensation[1]
+                vacancy_data['compensation_max'] = int(_compensation[1])
             else:
-                vacancy_data['compensation_min'] = _compensation[0]
-                vacancy_data['compensation_max'] = _compensation[2]
+                vacancy_data['compensation_min'] = int(_compensation[0])
+                vacancy_data['compensation_max'] = int(_compensation[2])
 
         # данные по работодателю
         vacancy_employer = vacancy.find('div', {'class': 'vacancy-serp-item__meta-info-company'})

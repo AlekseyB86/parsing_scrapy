@@ -1,3 +1,13 @@
+"""
+Написать приложение, которое собирает основные новости с сайта на выбор news.mail.ru, lenta.ru, yandex-новости.
+Для парсинга использовать XPath. Структура данных должна содержать:
+- название источника;
+- наименование новости;
+- ссылку на новость;
+дата публикации.
+Сложить собранные новости в БД
+"""
+
 from pprint import pprint
 from lxml import html
 import requests
@@ -25,10 +35,10 @@ def get_lenta_news():
         date = '.'.join([s for s in item.get('href').split('/') if s.isdigit()])
         source = 'lenta.ru'
         news_data = {
+            'source': source,
             'title': title,
             'link': link,
-            'date': date,
-            'source': source
+            'date': date
         }
         news_list.append(news_data)
 
